@@ -20,52 +20,46 @@ void I2C_SendByte(unsigned char byte)
 	TWDR = byte;
 	TWCR = (1<<TWINT)|(1<<TWEN);
 	while(!(TWCR&(1<<TWINT)));
-	TWCR = (1<<TWINT)|(1<<TWEN);// сбрасываем прерывание
+	TWCR = (1<<TWINT)|(1<<TWEN);
 }
+
 float I2C_ReadTemp()
 {
 	char MSB, LSB;
-	while(!(TWCR&(1<<TWINT)));		//ждем старший байт
-	MSB =  TWDR;								// получаем старший байт
-	TWCR = (1<<TWINT)|(1<<TWEN);// сбрасываем прерывание
-	while(!(TWCR&(1<<TWINT)));		//ждем младший байт
-	LSB =  TWDR;							// получаем младший байт
-	TWCR = (1<<TWINT)|(1<<TWEN);// сбрасываем прерывание
+	while(!(TWCR&(1<<TWINT)));		
+	MSB =  TWDR;								
+	TWCR = (1<<TWINT)|(1<<TWEN);
+	while(!(TWCR&(1<<TWINT)));		
+	LSB =  TWDR;							
+	TWCR = (1<<TWINT)|(1<<TWEN);
 	int tmp = (MSB << 8)	+ LSB;
 	
-	float temp = -40 + tmp * 0.01; // формула перевода из даташит
+	float temp = -40 + tmp * 0.01; 
 	
 	return temp;
 }
+
 int main(void)
 {
-   // Инициализация порта
-	DDRC = (1<<DDC3); // на вывод PC3 подключен нагреватель
+	DDRC = (1<<DDC3);   
+   	TWBR = 0x80;         			
+   	TWSR = 0x00;
+  
+    	while (1) 
+    	{
+		I2C_StartCondition();
+	    	I2C_SendByte(0x03); 
+	    	real_temperature = I2C_ReadTemp();
+	    	I2C_StopCondition();
 
-   // Инициализация i2c
-   TWBR = 0x80;         			// Настроим битрейт
-   TWSR = 0x00;
-   
-   
-    /* Replace with your application code */
-    while (1) 
-    {
-		   	I2C_StartCondition();
-		   	I2C_SendByte(0x03); // чтение температуры
-		   	real_temperature = I2C_ReadTemp();
-		   	I2C_StopCondition();
-
-		
 		if (real_temperature < temperature_setpoint)
 		{
-			PORTC |= (1 << PC3); // включаем нагрев
+			PORTC |= (1 << PC3); 
 		} 
 		else
 		{
-			PORTC = 0x00;			// выключаем нагрев
-		}
-		
-		
-    }
+			PORTC = 0x00;			
+		}		
+    	}
 }
 
